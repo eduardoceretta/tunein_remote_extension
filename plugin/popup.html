@@ -14,20 +14,25 @@ tr {
 </head>
 <body>
 <center>
-<table align="center">
-  <tr>
-    <td><input id="playPauseButton" type="image" src="/imgs/playPause.png" /></td>
-    <td><input id="nextRadioButton" type="image" src="/imgs/next.png" /></td>
-  </tr>  
-  <tr>
-    <td><font size="1">Play/Pause</font></td>
-    <td><font size="1">NextRadio</font></td>
-  </tr>
-</table>
-<table align="center">
-  <tr>
-    <td><input type="checkbox" name="shuffle" id="shuffle" checked> Shuffle </td>
-  </tr>
-</table>
+<div id='error' style='display: block'>
+  <span id='error_txt' style="color:red"></span>
+</div>
+<div id='controller' style='display: none'>
+  <table align="center">
+    <tr>
+      <td><input id="playPauseButton" type="image" src="/imgs/playPause.png" /></td>
+      <td><input id="nextRadioButton" type="image" src="/imgs/next.png" /></td>
+    </tr>  
+    <tr>
+      <td><font size="1">Play/Pause</font></td>
+      <td><font size="1">NextRadio</font></td>
+    </tr>
+  </table>
+  <table align="center">
+    <tr>
+      <td><input type="checkbox" name="shuffle" id="shuffle" checked> Shuffle </td>
+    </tr>
+  </table>
+</div>
 </center>
 </body>

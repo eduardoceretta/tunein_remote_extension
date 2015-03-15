@@ -2,8 +2,8 @@
   "manifest_version": 2,
 
   "name": "TuneInRemote",
-  "description": "This extension adds global shortcuts to tunein.com website.",
-  "version": "1.0",
+  "description": "Control Tunein.com website using keyboard shortcuts.",
+  "version": "1.1",
 
   "browser_action": {
     "default_icon": "imgs/icon_remote_128.png",
@@ -23,8 +23,8 @@
 
   "content_scripts": [
     {
-      "matches": ["http://tunein.com/*"],
-      "js": ["libs/jquery-1.11.2.min.js", "content.js"]
+      "matches": ["*://tunein.com/*"],
+      "js": ["libs/jquery-1.11.2.min.js", "conditionListener.js", "content.js"]
     }
   ],
   
@@ -40,7 +40,7 @@
       "suggested_key": {
         "default": "MediaNextTrack"
       },
-      "description": "Go to NextRadio from Playlist",
+      "description": "Go to NextRadio on Playlist",
       "global": true
     },
     "PlayPauseAlias": {
@@ -54,7 +54,7 @@
       "suggested_key": {
         "default": "Ctrl+Shift+X"
       },
-      "description": "Go to NextRadio from Playlist",
+      "description": "Go to NextRadio on Playlist",
       "global": true
     }
   },

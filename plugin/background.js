@@ -1,60 +1,77 @@
 
 function _processResponse(response) {
-  if (response && response.state) {
-    var buffering = '...';
-    var playing = '►';
-    var paused = ' ▌▌';
-    var stopped = 'X';
+  if (response){ 
+    if(response.state) 
+      _updateBadge(response.state);
+    _updatePopUp(response);
+  }
+}
 
-    var music = '\u266B';
-    if(response.state == 'playing') {
-      chrome.browserAction.setBadgeText({text: music});
-    } else if(response.state == 'stopped') {
-      chrome.browserAction.setBadgeText({text: paused});
-    } else if (response.state == 'idle') {
-      chrome.browserAction.setBadgeText({text: stopped});  
-    } else if (response.state == 'buffering') {
-      chrome.browserAction.setBadgeText({text: buffering});
-    } else {
-      chrome.browserAction.setBadgeText({text: ''});
-    }
-    chrome.browserAction.setBadgeBackgroundColor({color: [0, 0, 0, 255]});
+function _updatePopUp(response) {
+  if(response && response.error) 
+    chrome.storage.local.set({'Error': response});
+  else chrome.storage.local.set({'Error': null});
+}
+
+function _updateBadge(state) {
+  var buffering = '...';
+  var playing = '►';
+  var paused = ' ▌▌';
+  var stopped = 'X';
+  var error  = '!';
+
+  var music = '\u266B';
+  chrome.browserAction.setBadgeBackgroundColor({color: [0, 0, 0, 255]});
+  if(state == 'playing') {
+    chrome.browserAction.setBadgeText({text: music});
+  } else if(state == 'stopped') {
+    chrome.browserAction.setBadgeText({text: paused});
+  } else if (state == 'idle') {
+    chrome.browserAction.setBadgeText({text: stopped});  
+  } else if (state == 'buffering') {
+    chrome.browserAction.setBadgeText({text: buffering});
+  } else if (state == 'error') {
+    chrome.browserAction.setBadgeBackgroundColor({color: [255, 0, 0, 255]});
+    chrome.browserAction.setBadgeText({text: error});
+  } else {
+    chrome.browserAction.setBadgeText({text: ''});
   }
 }
 
 function _sendMessageToTuneInTab(request, callback) {
-  chrome.tabs.query({url : 'http://tunein.com/*'}, function(tabs) {
+  chrome.tabs.query({url : '*://tunein.com/*'}, function(tabs) {
     if (tabs && tabs.length > 0) {
       chrome.tabs.sendMessage(tabs[0].id, request, callback);
     }
   });
 }
 
-// LISTENERS
-// LISTENERS
+//////////////////////////////////////////////////////////
 // LISTENERS
 
 // Listens to Content Connections
 chrome.runtime.onConnect.addListener(function(port) {
   console.assert(port.name == "Content");
   port.onMessage.addListener(function(response) {
-     _processResponse(response);
+    _processResponse(response);
   });
 });
 
-// Listens to Content Messages
+// Listens to Messages
 chrome.extension.onMessage.addListener( function(request, sender, sendResponse) {
   if (request.from == 'PopUp') {
     _sendMessageToTuneInTab(request, function(response) {
       _processResponse(response);
     });
+  } else if (request.from == 'Content') {
+    _processResponse(request);
   }
 });
 
 // Listens to Keyboard Presses
 chrome.commands.onCommand.addListener(function(command) {
   command = command.replace('Alias', '');
-  if(command == 'PlayPause' || command == 'NextRadio' ) {
+  if(command == 'PlayPause' || command == 'NextRadio') {
     var request = {};
     request.from = 'Keyboard';
     request.command = command;
