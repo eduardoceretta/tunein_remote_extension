@@ -18,15 +18,22 @@ if (!_isLoggedIn()) {
   _observeLoginChange(function(){_sendMessageToBackgroud({state : 'idle'});});
 }
 
+function __DEBUG() {
+  // console.log(arguments);
+}
+
 function _isLoggedIn() {
+  __DEBUG('_isLoggedIn', ($('#userNav .my-profile').length > 0));
   return $('#userNav .my-profile').length > 0;
 }
 
 function _isInUserProfile() {
+  __DEBUG('_isInUserProfile', (document.URL.search(/tunein.com\/user/i) >= 0 && $('#favoritePane .clearfix').length > 0));
   return document.URL.search(/tunein.com\/user/i) >= 0 && $('#favoritePane .clearfix').length > 0;
 }
 
 function _goBackToUserProfile() {
+  __DEBUG('_goBackToUserProfile');
   if (!_isInUserProfile()) {
     $('#userNav .my-profile')[0].click();
   }
@@ -39,6 +46,7 @@ function _getRadioList() {
       title : elem.title,
     });
   });
+  __DEBUG('_getRadioList', radio_list);
   return radio_list;
 }
 
@@ -55,7 +63,7 @@ function _observeLoginChange(callback) {
 
 function _checkLogin(context) {
   if (_isLoggedIn()){
-    if (context.callback) 
+    if (context.callback)
       context.callback();
     return true;
   }
@@ -74,10 +82,12 @@ function _observeUrlChange(callback) {
 
 function _checkUrl(context) {
   if (_isInUserProfile()){
-    if (context.callback) 
+    if (context.callback)
       context.callback();
+    __DEBUG('_checkUrl', true);
     return true;
   }
+  __DEBUG('_checkUrl', false);
   return false;
 }
 
@@ -103,39 +113,46 @@ function _checkState(context) {
   }
 
   if( cur_state == 'playing' ||
-      cur_state == 'stopped' ||
-      cur_state == 'idle'    ) {
+      cur_state == 'stopped') {
+    __DEBUG('_checkState', context, cur_state, true);
     return true;
   } else if (cur_state == 'buffering') {
     // console.log('Will Listen again!', cur_state);
-  } else {
-    // console.log('Will Listen again!', cur_state);
+  } else if (cur_state == 'error' || cur_state == 'idle') {
+    __DEBUG('_checkState', context, cur_state, false);
+    nextRadio();
   }
+  __DEBUG('_checkState', context, cur_state, false);
   return false;
 }
 
 function _playPayse() {
+  __DEBUG('_playPayse');
   $('#tuner .playbutton-cont').trigger('click');
   _goBackToUserProfile();
 }
 
 function _nextRadio() {
+  __DEBUG('_nextRadio');
   var radios = _getRadioList();
   if(radios.length > 0) {
+    __DEBUG('  _nextRadio:Shuffle_on? ', radio_shuffle);
     if (radio_shuffle)
       radio_index = Math.floor(Math.random() * radios.length);
-    else 
+    else
       radio_index = (radio_index + 1) % radios.length;
     var radio = radios[radio_index];
-    console.log('  Play ' + radio.title, radio_index , radios.length);
+    __DEBUG('  _nextRadio:Play ' + radio.title, radio_index , radios.length);
     $($('.play-button',$('#favoritePane .clearfix')[radio_index])[0])[0].click();
     _goBackToUserProfile();
   }
 }
 
 function _updateOptions() {
+  __DEBUG('_updateOptions');
   chrome.storage.sync.get('Shuffle', function(result){
     radio_shuffle = result;
+    __DEBUG('  _updateOptions: Shuffle', result,radio_shuffle);
   });
 }
 

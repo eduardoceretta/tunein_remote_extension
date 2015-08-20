@@ -1,19 +1,25 @@
+function __DEBUG() {
+  // console.log(arguments);
+}
 
 function _processResponse(response) {
-  if (response){ 
-    if(response.state) 
+  __DEBUG('_processResponse', response);
+  if (response){
+    if(response.state)
       _updateBadge(response.state);
     _updatePopUp(response);
   }
 }
 
 function _updatePopUp(response) {
-  if(response && response.error) 
+  __DEBUG('_updatePopUp', response);
+  if(response && response.error)
     chrome.storage.local.set({'Error': response});
   else chrome.storage.local.set({'Error': null});
 }
 
 function _updateBadge(state) {
+  __DEBUG('_updateBadge', state);
   var buffering = '...';
   var playing = '►';
   var paused = ' ▌▌';
@@ -27,7 +33,7 @@ function _updateBadge(state) {
   } else if(state == 'stopped') {
     chrome.browserAction.setBadgeText({text: paused});
   } else if (state == 'idle') {
-    chrome.browserAction.setBadgeText({text: stopped});  
+    chrome.browserAction.setBadgeText({text: stopped});
   } else if (state == 'buffering') {
     chrome.browserAction.setBadgeText({text: buffering});
   } else if (state == 'error') {
@@ -39,6 +45,7 @@ function _updateBadge(state) {
 }
 
 function _sendMessageToTuneInTab(request, callback) {
+  __DEBUG('_sendMessageToTuneInTab', request);
   chrome.tabs.query({url : '*://tunein.com/*'}, function(tabs) {
     if (tabs && tabs.length > 0) {
       chrome.tabs.sendMessage(tabs[0].id, request, callback);
