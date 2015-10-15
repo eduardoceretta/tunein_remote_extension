@@ -27,7 +27,9 @@
       "js": ["libs/jquery-1.11.2.min.js", "conditionListener.js", "content.js"]
     }
   ],
-  
+
+  "web_accessible_resources": ["inject_script.js"],
+
   "commands": {
     "PlayPause": {
       "suggested_key": {

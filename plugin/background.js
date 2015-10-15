@@ -1,5 +1,5 @@
 function __DEBUG() {
-  // console.log(arguments);
+  console.log(arguments);
 }
 
 function _processResponse(response) {
@@ -36,7 +36,7 @@ function _updateBadge(state) {
     chrome.browserAction.setBadgeText({text: stopped});
   } else if (state == 'buffering') {
     chrome.browserAction.setBadgeText({text: buffering});
-  } else if (state == 'error') {
+  } else if (state == 'error' || state == 'notavailable' || state == 'external') {
     chrome.browserAction.setBadgeBackgroundColor({color: [255, 0, 0, 255]});
     chrome.browserAction.setBadgeText({text: error});
   } else {
@@ -64,6 +64,19 @@ chrome.runtime.onConnect.addListener(function(port) {
   });
 });
 
+// Listen to Tab/Url Changes
+// chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+//   if (changeInfo && changeInfo.status == 'complete' && tab && tab.url && tab.url.match(/tunein\.com\/radio/)) {
+//     var request = {};
+//     request.from = 'Url';
+//     request.command = 'GoToProfile';
+//     _sendMessageToTuneInTab(request, function(response) {
+//       _processResponse(response);
+//     });
+//   }
+//   console.log(tabId, changeInfo, tab);
+// });
+
 // Listens to Messages
 chrome.extension.onMessage.addListener( function(request, sender, sendResponse) {
   if (request.from == 'PopUp') {
@@ -77,6 +90,7 @@ chrome.extension.onMessage.addListener( function(request, sender, sendResponse) 
 
 // Listens to Keyboard Presses
 chrome.commands.onCommand.addListener(function(command) {
+  __DEBUG('chrome.commands.onCommand.addListener', command);
   command = command.replace('Alias', '');
   if(command == 'PlayPause' || command == 'NextRadio') {
     var request = {};
