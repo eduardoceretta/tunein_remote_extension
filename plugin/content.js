@@ -15,121 +15,100 @@ var context = {
 /////////////////START
 console.log('TuneIn Remote Plugin is controlling this tab now.');
 InitInjectScript();
-_updateRadioList();
+UpdateRadioList();
+UpdateOptions();
 
 function __DEBUG() {
-  console.log(arguments);
+  // console.log(arguments);
 }
 
-
-// TUNEIN WRAPPER FUNCTIONS ///////////////////////////////////////////////////
-// TUNEIN WRAPPER FUNCTIONS ///////////////////////////////////////////////////
-// TUNEIN WRAPPER FUNCTIONS ///////////////////////////////////////////////////
-// TUNEIN WRAPPER FUNCTIONS ///////////////////////////////////////////////////
-// TUNEIN WRAPPER FUNCTIONS ///////////////////////////////////////////////////
-
-function _toggleMuteVolume() {
-  __DEBUG('_toggleMuteVolume');
-  var evt = document.createEvent("CustomEvent");
-  evt.initCustomEvent("TIR_ToggleMuteVolume", true, true, {});
-  document.dispatchEvent(evt);
-}
-
-function _playPayse() {
-  __DEBUG('_playPayse');
-  var evt = document.createEvent("CustomEvent");
-  evt.initCustomEvent("TIR_PlayPause", true, true, {});
-  document.dispatchEvent(evt);
-}
-
-function _playRadio(radio) {
-  __DEBUG('_playRadio');
-  var evt = document.createEvent("CustomEvent");
-  evt.initCustomEvent("TIR_PlayRadio", true, true, radio);
-  document.dispatchEvent(evt);
-}
-
-// HELPER FUNCTIONS ///////////////////////////////////////////////////
-// HELPER FUNCTIONS ///////////////////////////////////////////////////
-// HELPER FUNCTIONS ///////////////////////////////////////////////////
-// HELPER FUNCTIONS ///////////////////////////////////////////////////
-// HELPER FUNCTIONS ///////////////////////////////////////////////////
+// MAIN FUNCTIONS /////////////////////////////////////////////////
+// MAIN FUNCTIONS /////////////////////////////////////////////////
+// MAIN FUNCTIONS /////////////////////////////////////////////////
+// MAIN FUNCTIONS /////////////////////////////////////////////////
+// MAIN FUNCTIONS /////////////////////////////////////////////////
 
 function InitInjectScript() {
+  __DEBUG('InitInjectScript');
   var s = document.createElement('script');
   s.src = chrome.extension.getURL('inject_script.js');
   s.onload = function() {
-      this.parentNode.removeChild(this);
+    this.parentNode.removeChild(this);
   };
   (document.head||document.documentElement).appendChild(s);
 
   document.addEventListener('TIR_TuneInEvent', function (e) {
-    var data = e.detail;
-    console.log('TIR_TuneInEvent', data);
+    _processTuneInEvent(e.detail);
   });
 }
 
-function _updateRadioList() {
+function UpdateRadioList() {
+  __DEBUG('UpdateRadioList');
   $.ajax({
     dataType: "json",
     url: '/myradio/presets/folders/1/',
-    success: function (result) {
-      console.log(result);
-      console.log(context);
-      context.radio_list = [];
-      for (i = 0; i < result.length; ++i) {
-        context.radio_list.push({
-          stationId : result[i].stationId
-          ,title : result[i].title
-          ,listenStyle : result[i].listenStyle
-          ,listenType : result[i].listenType
-          ,debug : result[i]
-        });
-      }
-      console.log(context);
-    }
+    success: _processRadioListUpdate
   });
 }
 
+function UpdateOptions() {
+  __DEBUG('UpdateOptions');
+  chrome.storage.sync.get('Shuffle', function(result){
+    radio_shuffle = result.Shuffle;
+    __DEBUG('  _updateOptions: Shuffle', result,radio_shuffle);
+  });
+}
+
+// Go to NextRadio
+function nextRadio() {
+  __DEBUG('nextRadio');
+  _nextRadio();
+}
+
+// Play/Pause current Radio
+function playPause() {
+  __DEBUG('playPause');
+  _playPause();
+}
+
+// Toggle Mute Volume on/off
+function toggleMuteVolume() {
+  __DEBUG('toggleMuteVolume');
+  _toggleMuteVolume();
+}
 
 
-// function _checkState(context) {
-//   var cur_state = $('#tuner').attr('class');
+// HELPER FUNCTIONS ///////////////////////////////////////////////////
+// HELPER FUNCTIONS ///////////////////////////////////////////////////
+// HELPER FUNCTIONS ///////////////////////////////////////////////////
+// HELPER FUNCTIONS ///////////////////////////////////////////////////
+// HELPER FUNCTIONS ///////////////////////////////////////////////////
+function _processRadioListUpdate(result) {
+  __DEBUG('_processRadioListUpdate', result);
+  context.radio_list = [];
+  for (i = 0; i < result.length; ++i) {
+    context.radio_list.push({
+      stationId : result[i].stationId
+      ,title : result[i].title
+      ,listenStyle : result[i].listenStyle
+      ,listenType : result[i].listenType
+    });
+  }
+}
 
-//   if (cur_state != context.last_state){
-//     if (context.callback) context.callback({state : cur_state});
-//     context.last_state = cur_state;
-//   }
+function _processTuneInEvent(data) {
+  __DEBUG('_processTuneInEvent', data);
+  // console.log('TIR_TuneInEvent', data);
 
-//   if( cur_state == 'playing' ||
-//       cur_state == 'stopped') {
-//     __DEBUG('_checkState', context, cur_state, true);
-//     return true;
-//   } else if (cur_state == 'buffering') {
-//     // console.log('Will Listen again!', cur_state);
-//   } else if (cur_state == 'error' ||
-//              cur_state == 'idle'  ||
-//              cur_state == 'notavailable' ||
-//              cur_state == 'external') {
-//     __DEBUG('_checkState', context, cur_state, false);
-//     // nextRadio();
-//   }
-//   __DEBUG('_checkState', context, cur_state, false);
-//   return false;
-// }
+  _sendMessageToBackgroud({state : data.playState});
 
-
-
-
-
-
-
-
-
-
-
-
-
+  if( data.eventName === "Broadcast.TuneFailed"    ||
+      data.eventName === "Tunner.StreamsExhausted" ||
+      (data.eventName === "Tunner.PlayStateChanged" && data.playState === "unplayable")
+    ) {
+    _nextRadio();
+  }
+}
 
 function _nextRadio() {
   __DEBUG('_nextRadio');
@@ -144,57 +123,64 @@ function _nextRadio() {
     __DEBUG('  _nextRadio:Play ' + radio.title, radio_index , radios.length);
     _playRadio(radio);
   }
-  _updateRadioList();
+  UpdateRadioList();
 }
 
-function _updateOptions() {
-  __DEBUG('_updateOptions');
-  chrome.storage.sync.get('Shuffle', function(result){
-    radio_shuffle = result;
-    __DEBUG('  _updateOptions: Shuffle', result,radio_shuffle);
-  });
+
+function _sendMessageToBackgroud(request, callback) {
+  request.from = 'Content';
+  chrome.extension.sendMessage(request, callback);
 }
 
-// function _sendMessageToBackgroud(request, callback) {
-//   request.from = 'Content';
-//   chrome.extension.sendMessage(request, callback);
-// }
+// TUNEIN WRAPPER FUNCTIONS ///////////////////////////////////////////////////
+// TUNEIN WRAPPER FUNCTIONS ///////////////////////////////////////////////////
+// TUNEIN WRAPPER FUNCTIONS ///////////////////////////////////////////////////
+// TUNEIN WRAPPER FUNCTIONS ///////////////////////////////////////////////////
+// TUNEIN WRAPPER FUNCTIONS ///////////////////////////////////////////////////
 
-
-// Go to NextRadio
-function nextRadio(response_callback) {
-  console.log('NextRadio');
-  _nextRadio();
+function _toggleMuteVolume() {
+  __DEBUG('_toggleMuteVolume');
+  var evt = document.createEvent("CustomEvent");
+  evt.initCustomEvent("TIR_ToggleMuteVolume", true, true, {});
+  document.dispatchEvent(evt);
 }
 
-// Play/Pause current Radio
-function playPause(response_callback) {
-  console.log('Play/Pause');
-  _playPayse();
+function _playPause() {
+  __DEBUG('_playPause');
+  var evt = document.createEvent("CustomEvent");
+  evt.initCustomEvent("TIR_PlayPause", true, true, {});
+  document.dispatchEvent(evt);
 }
 
-// Toggle Mute Volume on/off
-function toggleMuteVolume(response_callback) {
-  console.log('ToggleMuteVolume');
-  _toggleMuteVolume();
+function _playRadio(radio) {
+  __DEBUG('_playRadio', radio);
+  var evt = document.createEvent("CustomEvent");
+  evt.initCustomEvent("TIR_PlayRadio", true, true, radio);
+  document.dispatchEvent(evt);
 }
+
+// CHROME LISTENERS ///////////////////////////////////////////////////
+// CHROME LISTENERS ///////////////////////////////////////////////////
+// CHROME LISTENERS ///////////////////////////////////////////////////
+// CHROME LISTENERS ///////////////////////////////////////////////////
+// CHROME LISTENERS ///////////////////////////////////////////////////
+
 
 // Listener to Background Events
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
-    console.log(request);
+    // console.log('LISTEN', request);
     // if (_isLoggedIn()) {
       if (request.from == 'Options' && request.key == 'Shuffle') {
-        radio_shuffle = request.value;
+        radio_shuffle = request.value.newValue;
       } else if (request.command) {
         if (request.command == 'NextRadio') {
-          nextRadio(sendResponse);
+          nextRadio();
         } else if (request.command == 'PlayPause') {
-          playPause(sendResponse);
+          playPause();
         } else if (request.command == 'ToggleMuteVolume') {
-          toggleMuteVolume(sendResponse);
+          toggleMuteVolume();
         }
-        // _updateOptions();
       }
     // } else {
     //   sendResponse(error_request);

@@ -1,5 +1,5 @@
 function __DEBUG() {
-  console.log(arguments);
+  // console.log(arguments);
 }
 
 function _processResponse(response) {
@@ -25,8 +25,8 @@ function _updateBadge(state) {
   var paused = ' ▌▌';
   var stopped = 'X';
   var error  = '!';
-
   var music = '\u266B';
+
   chrome.browserAction.setBadgeBackgroundColor({color: [0, 0, 0, 255]});
   if(state == 'playing') {
     chrome.browserAction.setBadgeText({text: music});
@@ -34,9 +34,9 @@ function _updateBadge(state) {
     chrome.browserAction.setBadgeText({text: paused});
   } else if (state == 'idle') {
     chrome.browserAction.setBadgeText({text: stopped});
-  } else if (state == 'buffering') {
+  } else if (state == 'connecting') {
     chrome.browserAction.setBadgeText({text: buffering});
-  } else if (state == 'error' || state == 'notavailable' || state == 'external') {
+  } else if (state == 'error' || state == 'unplayable') {
     chrome.browserAction.setBadgeBackgroundColor({color: [255, 0, 0, 255]});
     chrome.browserAction.setBadgeText({text: error});
   } else {
@@ -63,19 +63,6 @@ chrome.runtime.onConnect.addListener(function(port) {
     _processResponse(response);
   });
 });
-
-// Listen to Tab/Url Changes
-// chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-//   if (changeInfo && changeInfo.status == 'complete' && tab && tab.url && tab.url.match(/tunein\.com\/radio/)) {
-//     var request = {};
-//     request.from = 'Url';
-//     request.command = 'GoToProfile';
-//     _sendMessageToTuneInTab(request, function(response) {
-//       _processResponse(response);
-//     });
-//   }
-//   console.log(tabId, changeInfo, tab);
-// });
 
 // Listens to Messages
 chrome.extension.onMessage.addListener( function(request, sender, sendResponse) {
