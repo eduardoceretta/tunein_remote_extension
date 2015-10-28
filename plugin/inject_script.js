@@ -3,13 +3,14 @@ _InitControllListeners();
 _InitTuneInListeners();
 
 var TIR_context = {
-  muted_volume : 100
+  muted_volume : 100,
+  volume_increase: 5,
+  volume_decrease: 5
 };
 
 function _InitControllListeners() {
   document.addEventListener('TIR_PlayPause', function (e) {
-    var data = e.detail;
-    TIR_PlayPause(data);
+    TIR_PlayPause();
   });
 
   document.addEventListener('TIR_PlayRadio', function (e) {
@@ -18,8 +19,19 @@ function _InitControllListeners() {
   });
 
   document.addEventListener('TIR_ToggleMuteVolume', function (e) {
-    var data = e.detail;
-    TIR_ToggleMuteVolume(data);
+    TIR_ToggleMuteVolume();
+  });
+
+  document.addEventListener('TIR_VolumeUp', function (e) {
+    TIR_VolumeUp();
+  });
+
+  document.addEventListener('TIR_VolumeDown', function (e) {
+    TIR_VolumeDown();
+  });
+
+  document.addEventListener('TIR_GetInfo', function (e) {
+    TIR_GetInfo();
   });
 }
 
@@ -34,6 +46,11 @@ function _InitTuneInListeners() {
     function(a){_SendEventToExtension('Tunner.VolumeChanged');});
   Backbone.listenTo(TuneIn.events, Events.Tuner.PlayStateChanged,
     function(a){_SendEventToExtension('Tunner.PlayStateChanged');});
+  Backbone.listenTo(TuneIn.events, Events.Auth.Success,
+    function(a){_SendEventToExtension('Auth.Success');});
+  Backbone.listenTo(TuneIn.events, Events.Auth.Logout,
+    function(a){_SendEventToExtension('Auth.Logout');});
+
 
   // Backbone.listenTo(TuneIn.events, Events.Tuner.Play,
   //   function(a){_SendEventToExtension('Tunner.Play');});
@@ -137,6 +154,7 @@ function _InitTuneInListeners() {
   //   function(a){_SendEventToExtension('App.FullScreenPageLoaded');});
   // Backbone.listenTo(TuneIn.events, Events.App.ConvertUser,
   //   function(a){_SendEventToExtension('App.ConvertUser');});
+
 }
 
 function _SendEventToExtension(e) {
@@ -157,8 +175,8 @@ function _SendEventToExtension(e) {
 // API /////////////////////////////////////////////////////////////
 // API /////////////////////////////////////////////////////////////
 // API /////////////////////////////////////////////////////////////
-function TIR_PlayPause(data) {
-  // console.log("TIR_PlayPause", data);
+function TIR_PlayPause() {
+  // console.log("TIR_PlayPause");
   if (TuneIn.app.getPlayState() == "playing") {
     TuneIn.events.trigger(Events.Tuner.Pause);
   } else {
@@ -186,8 +204,8 @@ function TIR_PlayRadio(data) {
 }
 
 
-function TIR_ToggleMuteVolume(data) {
-  // console.log("TIR_ToggleMuteVolume", data);
+function TIR_ToggleMuteVolume() {
+  // console.log("TIR_ToggleMuteVolume");
   var volume = TuneIn.app.volume();
   if (volume > 0) {
     TIR_context.muted_volume = volume;
@@ -195,7 +213,31 @@ function TIR_ToggleMuteVolume(data) {
   } else if(volume == 0) {
     TuneIn.events.trigger(Events.Tuner.VolumeChanged, TIR_context.muted_volume);
   } else {
-    // console.log('TIR_ToggleMuteVolume: Invalid volume', volume, data);
+    // console.log('TIR_ToggleMuteVolume: Invalid volume', volume);
   }
+}
+
+
+function TIR_VolumeUp() {
+  // console.log("TIR_VolumeUp");
+  var volume = TuneIn.app.volume();
+  if (volume < 100) {
+    TuneIn.events.trigger(Events.Tuner.VolumeChanged, Math.min(volume + TIR_context.volume_increase, 100));
+  }
+}
+
+
+function TIR_VolumeDown() {
+  // console.log("TIR_VolumeDown");
+  var volume = TuneIn.app.volume();
+  if (volume > 0) {
+    TuneIn.events.trigger(Events.Tuner.VolumeChanged, Math.max(volume - TIR_context.volume_decrease, 0));
+  }
+}
+
+
+function TIR_GetInfo() {
+  // console.log("TIR_GetInfo");
+  _SendEventToExtension('GetInfoReply');
 }
 

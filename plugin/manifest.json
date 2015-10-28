@@ -3,14 +3,14 @@
 
   "name": "TuneInRemote",
   "description": "Control Tunein.com website using keyboard shortcuts.",
-  "version": "1.1",
+  "version": "1.3",
 
   "browser_action": {
     "default_icon": "imgs/icon_remote_128.png",
     "default_popup": "popup.html"
   },
 
-  "icons": { 
+  "icons": {
     "64" : "imgs/icon_remote_64.png",
     "128": "imgs/icon_remote_128.png" },
 
@@ -24,7 +24,7 @@
   "content_scripts": [
     {
       "matches": ["*://tunein.com/*"],
-      "js": ["libs/jquery-1.11.2.min.js", "conditionListener.js", "content.js"]
+      "js": ["libs/jquery-1.11.2.min.js", "content.js"]
     }
   ],
 
@@ -45,11 +45,11 @@
       "description": "Go to NextRadio on Playlist",
       "global": true
     },
-    "PlayPauseAlias": {
-      "suggested_key": {
-        "default": "Ctrl+Shift+Z"
+    "ToggleMute": {
+      "suggested_key":{
+        "default" : "Ctrl+Shift+C"
       },
-      "description": "PlayPause Current Radio",
+      "description": "Toggle Mute Volume On/Off",
       "global": true
     },
     "NextRadioAlias": {

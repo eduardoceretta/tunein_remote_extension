@@ -23,7 +23,7 @@ function _updateBadge(state) {
   var buffering = '...';
   var playing = '►';
   var paused = ' ▌▌';
-  var stopped = 'X';
+  var iddle = 'X';
   var error  = '!';
   var music = '\u266B';
 
@@ -33,7 +33,7 @@ function _updateBadge(state) {
   } else if(state == 'stopped') {
     chrome.browserAction.setBadgeText({text: paused});
   } else if (state == 'idle') {
-    chrome.browserAction.setBadgeText({text: stopped});
+    chrome.browserAction.setBadgeText({text: ''});
   } else if (state == 'connecting') {
     chrome.browserAction.setBadgeText({text: buffering});
   } else if (state == 'error' || state == 'unplayable') {
@@ -79,7 +79,11 @@ chrome.extension.onMessage.addListener( function(request, sender, sendResponse) 
 chrome.commands.onCommand.addListener(function(command) {
   __DEBUG('chrome.commands.onCommand.addListener', command);
   command = command.replace('Alias', '');
-  if(command == 'PlayPause' || command == 'NextRadio') {
+  if( command == 'PlayPause'  ||
+      command == 'NextRadio'  ||
+      command == 'ToggleMute' ||
+      command == 'VolumeUp' ||
+      command == 'VolumeDown') {
     var request = {};
     request.from = 'Keyboard';
     request.command = command;
