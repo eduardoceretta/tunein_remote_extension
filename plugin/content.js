@@ -1,10 +1,5 @@
-var login_observer = null;
-var url_observer = null;
-var state_observer = null;
-var connection_port;
-
-var radio_shuffle = true;
-var radio_index = 0;
+var player_status_checker_timer = null;
+var player_status_checker_counter = 0;
 
 var error_request = {error : 'NotLoggedIn', error_message : 'Please Log In!', state : 'error'};
 
@@ -13,16 +8,17 @@ var context = {
 };
 
 /////////////////START
-console.log('TuneIn Remote Plugin is controlling this tab now.');
+console.log('TuneIn Remote Plugin is controlling this tab now!!!');
+
 InitInjectScript();
-UpdateRadioList();
-UpdateOptions();
-$( document ).ready(function() {
-  GetInitialInfo();
-});
+InitTimers();
+
+// $( document ).ready(function() {
+  // GetInitialInfo();
+// });
 
 function __DEBUG() {
-  // console.log(arguments);
+  console.log(arguments);
 }
 
 // MAIN FUNCTIONS /////////////////////////////////////////////////
@@ -30,6 +26,11 @@ function __DEBUG() {
 // MAIN FUNCTIONS /////////////////////////////////////////////////
 // MAIN FUNCTIONS /////////////////////////////////////////////////
 // MAIN FUNCTIONS /////////////////////////////////////////////////
+
+function InitTimers() {
+  __DEBUG('InitTimers');
+  player_status_checker_timer = setInterval(_playerStatusChecker, 1000);
+}
 
 function InitInjectScript() {
   __DEBUG('InitInjectScript');
@@ -45,22 +46,6 @@ function InitInjectScript() {
   });
 }
 
-function UpdateRadioList() {
-  __DEBUG('UpdateRadioList');
-  $.ajax({
-    dataType: "json",
-    url: '/myradio/presets/folders/1/',
-    success: _processRadioListUpdate
-  });
-}
-
-function UpdateOptions() {
-  __DEBUG('UpdateOptions');
-  chrome.storage.sync.get('Shuffle', function(result){
-    radio_shuffle = result.Shuffle;
-    __DEBUG('  _updateOptions: Shuffle', result,radio_shuffle);
-  });
-}
 
 function GetInitialInfo() {
   __DEBUG('GetInitialInfo');
@@ -79,24 +64,9 @@ function playPause() {
   _playPause();
 }
 
-// Toggle Mute Volume on/off
-function toggleMuteVolume() {
-  __DEBUG('toggleMuteVolume');
-  _toggleMuteVolume();
-}
-
-function volumeUp() {
-  __DEBUG('volumeUp');
-  _volumeUp();
-}
-
-function volumeDown() {
-  __DEBUG('volumeDown');
-  _volumeDown();
-}
-
 function isLoggedIn() {
   __DEBUG('isLoggedIn');
+  return 1;
   if(!context.userAuthenticated) {
     _requestAuthorizationInfo();
   }
@@ -108,55 +78,69 @@ function isLoggedIn() {
 // HELPER FUNCTIONS ///////////////////////////////////////////////////
 // HELPER FUNCTIONS ///////////////////////////////////////////////////
 // HELPER FUNCTIONS ///////////////////////////////////////////////////
+function _playerStatusChecker() {
+  player_status_checker_counter++;
+  if (document.getElementById('playerActionButton')) {
+    var cur_class = document.getElementById('playerActionButton').className;
+    if (cur_class == 'playing' && player_status_checker_timer) {
+      window.clearInterval(player_status_checker_timer);
+    } else if (cur_class == 'failed') {
+      nextRadio();
+    }
+  }
+
+  // After a minute don't check the status so often.
+  if (player_status_checker_counter == 60) {
+    window.clearInterval(player_status_checker_timer);
+    player_status_checker_timer = setInterval(_playerStatusChecker, 5000);
+
+  // If it still doesn't help just give up
+  } else if (player_status_checker_counter > 80) {
+    console.log('stop checking for player status');
+    window.clearInterval(player_status_checker_timer);
+  }
+}
+
 function _processRadioListUpdate(result) {
   __DEBUG('_processRadioListUpdate', result);
-  context.radio_list = [];
-  for (i = 0; i < result.length; ++i) {
-    context.radio_list.push({
-      stationId : result[i].stationId
-      ,title : result[i].title
-      ,listenStyle : result[i].listenStyle
-      ,listenType : result[i].listenType
-    });
-  }
+  context.radio_list = result;
 }
 
 function _processTuneInEvent(data) {
   __DEBUG('_processTuneInEvent', data);
-  // console.log('TIR_TuneInEvent', data);
+  console.log('TIR_TuneInEvent', data);
 
-  if(data.userAuthenticated != undefined) {
-    context.userAuthenticated = data.userAuthenticated;
+  if (data.eventName == 'UpdateRadioList') {
+    _processRadioListUpdate(data.radioList);
   }
 
-  if(context.userAuthenticated == true) {
-    _sendMessageToBackgroud({state : data.playState});
+  // if(data.userAuthenticated != undefined) {
+  //   context.userAuthenticated = data.userAuthenticated;
+  // }
 
-    if( data.eventName === "Broadcast.TuneFailed"    ||
-        data.eventName === "Tunner.StreamsExhausted" ||
-        (data.eventName === "Tunner.PlayStateChanged" && data.playState === "unplayable")
-      ) {
-      _nextRadio();
-    }
-  }else {
-    _sendMessageToBackgroud(error_request);
-  }
+  // if(context.userAuthenticated == true) {
+  //   _sendMessageToBackgroud({state : data.playState});
+
+  //   if( data.eventName === "Broadcast.TuneFailed"    ||
+  //       data.eventName === "Tunner.StreamsExhausted" ||
+  //       (data.eventName === "Tunner.PlayStateChanged" && data.playState === "unplayable")
+  //     ) {
+  //     _nextRadio();
+  //   }
+  // }else {
+  //   _sendMessageToBackgroud(error_request);
+  // }
 }
 
 function _nextRadio() {
   __DEBUG('_nextRadio');
   var radios = context.radio_list;
   if(radios.length > 0) {
-    __DEBUG('  _nextRadio:Shuffle_on? ', radio_shuffle);
-    if (radio_shuffle)
-      radio_index = Math.floor(Math.random() * radios.length);
-    else
-      radio_index = (radio_index + 1) % radios.length;
+    var radio_index = Math.floor(Math.random() * radios.length);
     var radio = radios[radio_index];
     __DEBUG('  _nextRadio:Play ' + radio.title, radio_index , radios.length);
     _playRadio(radio);
   }
-  UpdateRadioList();
 }
 
 
@@ -170,27 +154,6 @@ function _sendMessageToBackgroud(request, callback) {
 // TUNEIN WRAPPER FUNCTIONS ///////////////////////////////////////////////////
 // TUNEIN WRAPPER FUNCTIONS ///////////////////////////////////////////////////
 // TUNEIN WRAPPER FUNCTIONS ///////////////////////////////////////////////////
-
-function _toggleMuteVolume() {
-  __DEBUG('_toggleMuteVolume');
-  var evt = document.createEvent("CustomEvent");
-  evt.initCustomEvent("TIR_ToggleMuteVolume", true, true, {});
-  document.dispatchEvent(evt);
-}
-
-function _volumeUp() {
-  __DEBUG('_volumeUp');
-  var evt = document.createEvent("CustomEvent");
-  evt.initCustomEvent("TIR_VolumeUp", true, true, {});
-  document.dispatchEvent(evt);
-}
-
-function _volumeDown() {
-  __DEBUG('_volumeDown');
-  var evt = document.createEvent("CustomEvent");
-  evt.initCustomEvent("TIR_VolumeDown", true, true, {});
-  document.dispatchEvent(evt);
-}
 
 function _playPause() {
   __DEBUG('_playPause');
@@ -223,21 +186,15 @@ function _requestAuthorizationInfo() {
 // Listener to Background Events
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
-    // console.log('LISTEN', request);
+    console.log('LISTEN', request);
     if (isLoggedIn()) {
       if (request.from == 'Options' && request.key == 'Shuffle') {
-        radio_shuffle = request.value.newValue;
+        // radio_shuffle = request.value.newValue;
       } else if (request.command) {
         if (request.command == 'NextRadio') {
           nextRadio();
         } else if (request.command == 'PlayPause') {
           playPause();
-        } else if (request.command == 'ToggleMute') {
-          toggleMuteVolume();
-        } else if (request.command == 'VolumeUp') {
-          volumeUp();
-        } else if (request.command == 'VolumeDown') {
-          volumeDown();
         }
       }
     } else {

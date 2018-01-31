@@ -3,7 +3,7 @@
 
   "name": "TuneInRemote",
   "description": "Control Tunein.com website using keyboard shortcuts.",
-  "version": "1.3",
+  "version": "1.4.3",
 
   "browser_action": {
     "default_icon": "imgs/icon_remote_128.png",
@@ -43,13 +43,6 @@
         "default": "MediaNextTrack"
       },
       "description": "Go to NextRadio on Playlist",
-      "global": true
-    },
-    "ToggleMute": {
-      "suggested_key":{
-        "default" : "Ctrl+Shift+C"
-      },
-      "description": "Toggle Mute Volume On/Off",
       "global": true
     },
     "NextRadioAlias": {

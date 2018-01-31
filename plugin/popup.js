@@ -13,16 +13,6 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('controller').style.display = 'block';    
     }
   });
-
-  // Update Shuffle State
-  chrome.storage.sync.get('Shuffle', function(result){
-    document.querySelector('#shuffle').checked = result.Shuffle;
-  });
-
-  // Register Shuffle OnChange Listener
-  document.querySelector('#shuffle').onchange = function() {
-    chrome.storage.sync.set({'Shuffle': document.querySelector('#shuffle').checked});
-  };
 });
 
 

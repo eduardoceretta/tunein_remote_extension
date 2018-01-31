@@ -1,5 +1,5 @@
 function __DEBUG() {
-  // console.log(arguments);
+  console.log(arguments);
 }
 
 function _processResponse(response) {
@@ -80,10 +80,7 @@ chrome.commands.onCommand.addListener(function(command) {
   __DEBUG('chrome.commands.onCommand.addListener', command);
   command = command.replace('Alias', '');
   if( command == 'PlayPause'  ||
-      command == 'NextRadio'  ||
-      command == 'ToggleMute' ||
-      command == 'VolumeUp' ||
-      command == 'VolumeDown') {
+      command == 'NextRadio') {
     var request = {};
     request.from = 'Keyboard';
     request.command = command;
