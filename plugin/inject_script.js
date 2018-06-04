@@ -1,29 +1,101 @@
- console.log('Loaded IN Page Content Script.');
-_InitControllListeners();
-_InitTuneInScript();
+/////////////////Variables
+var TIR_context = {};
 
-var TIR_context = {
-};
+var player_status_checker_timer = null;
+var player_status_checker_counter = 0;
 
-function _InitControllListeners() {
+function __INFO(...args) {
+  console.log(args);
+}
+function __DEBUG(...args) {
+  console.log(args);
+}
+/////////////////START
+__INFO('TuneIn Remote Plugin Loaded IN Page Content Script.');
+InitGATracking();
+InitContentListeners();
+FetchTuneInInfo();
+InitTimers();
+
+// MAIN FUNCTIONS /////////////////////////////////////////////////
+// MAIN FUNCTIONS /////////////////////////////////////////////////
+// MAIN FUNCTIONS /////////////////////////////////////////////////
+// MAIN FUNCTIONS /////////////////////////////////////////////////
+// MAIN FUNCTIONS /////////////////////////////////////////////////
+
+function InitContentListeners() {
   document.addEventListener('TIR_PlayPause', function (e) {
-    TIR_PlayPause();
+    PlayPause();
   });
 
-  document.addEventListener('TIR_PlayRadio', function (e) {
-    var data = e.detail;
-    TIR_PlayRadio(data);
-  });
-
-  document.addEventListener('TIR_GetInfo', function (e) {
-    TIR_GetInfo();
+  document.addEventListener('TIR_NextRadio', function (e) {
+    NextRadio();
   });
 }
 
-function _InitTuneInScript() {
-  console.log('_InitTuneInScript');
+function InitGATracking() {
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//ssl.google-analytics.com/analytics.js','ga');
+  // })(window,document,'script','//ssl.google-analytics.com/analytics_debug.js','ga');
+
+  var _AnalyticsCode = 'UA-120177315-1';
+  ga('create', _AnalyticsCode, 'auto', 'TIR');
+  ga('TIR.send', 'pageview');
+  ga(function(tracker) {
+    var trackers = ga.getAll();
+    for (i=0;i<trackers.length;++i) {
+      var tracker = trackers[i];
+      if(tracker.get('name') == 'TIR') {
+        __DEBUG('TIR GA Tracking loaded!');
+      }
+    }
+  });
+}
+
+function FetchTuneInInfo() {
   _FetchTuneInUserSerial();
 }
+
+function InitTimers() {
+  player_status_checker_timer = setInterval(_PlayerStatusChecker, 1000);
+}
+
+// API /////////////////////////////////////////////////////////////
+// API /////////////////////////////////////////////////////////////
+// API /////////////////////////////////////////////////////////////
+// API /////////////////////////////////////////////////////////////
+// API /////////////////////////////////////////////////////////////
+function PlayPause() {
+  ga('TIR.send', 'event', 'Command', 'PlayPause');
+  __INFO("PlayPause");
+  button = _GetPlayerButton();
+  if(button != null) {
+    button.click();
+    InitTimers();
+  }
+}
+
+function NextRadio() {
+  ga('TIR.send', 'event', 'Command', 'NextRadio');
+  __INFO("NextRadio");
+
+  var radios = TIR_context['radio_list'];
+  if(radios.length > 0) {
+    var radio_index = Math.floor(Math.random() * radios.length);
+    var radio = radios[radio_index];
+    __DEBUG('  _nextRadio:Play ' + radio.title, radio_index , radios.length);
+    ga('TIR.send', 'event', 'Data', 'RadioRandomPick', 'Index', radio_index);
+    window.location.replace("https://tunein.com/radio/" + radio.GuideId);
+  }
+}
+
+// HELPER FUNCTIONS /////////////////////////////////////////////////
+// HELPER FUNCTIONS /////////////////////////////////////////////////
+// HELPER FUNCTIONS /////////////////////////////////////////////////
+// HELPER FUNCTIONS /////////////////////////////////////////////////
+// HELPER FUNCTIONS /////////////////////////////////////////////////
 
 function _FetchTuneInUserSerial(){
   url = '.';
@@ -32,7 +104,7 @@ function _FetchTuneInUserSerial(){
   xhr.withCredentials = true;
   xhr.onload = function () {
     var tuneInUserSerial = /tuneInUserSerial":"([\w-]+)/g.exec(xhr.responseText)[1];
-    console.log('Got UserSerial:' + tuneInUserSerial);
+    __DEBUG('Got UserSerial:' + tuneInUserSerial);
     TIR_context['tuneInUserSerial'] = tuneInUserSerial;
     _FetchFavoritesList(tuneInUserSerial);
   };
@@ -51,7 +123,6 @@ function _FetchFavoritesList(tuneInUserSerial){
 }
 
 function _FetchFavoritesPage(url, fav_items) {
-  console.log('FetchingFavoritesPage');
   var xhr = new XMLHttpRequest();
   xhr.open("GET", url, true);
   xhr.withCredentials = true;
@@ -69,7 +140,6 @@ function _FetchFavoritesPage(url, fav_items) {
 }
 
 function _ParseFavoriteItems(fav_items){
-  console.log('_ParseFavoriteItems');
   var radio_list=[];
   for (i=0;i<fav_items.length;++i) {
 
@@ -83,50 +153,57 @@ function _ParseFavoriteItems(fav_items){
     }
   }
   TIR_context['radio_list'] = radio_list;
-  _SendUpdateRadiosEventToExtension(radio_list)
+
+  ga('TIR.send', 'event', 'Data', 'FetchFavorites', 'NumItems', radio_list.length);
+  __INFO('Got Radios: ' +  radio_list.length);
 }
 
-function _SendUpdateRadiosEventToExtension(radio_list) {
-  var evt = document.createEvent("CustomEvent");
-  evt.initCustomEvent("TIR_TuneInEvent", true, true, {
-    eventName: 'UpdateRadioList',
-    radioList: radio_list
-    // ,userAuthenticated: TuneIn.Helpers.userAuthenticated()
-  });
-  document.dispatchEvent(evt);
+function _GetPlayerStatus() {
+  var status_list = ["idle", "loaded", "playing", "preroll", "paused", "stopped", "connecting", "failed", "htmlStreamLoaded"];
+  for(var i=0;i<status_list.length;++i) {
+    if (document.getElementsByClassName(status_list[i]).length > 0) {
+      return status_list[i];
+    }
+  }
+  return null;
 }
 
-function _SendEventToExtension(e) {
-  var evt = document.createEvent("CustomEvent");
-  evt.initCustomEvent("TIR_TuneInEvent", true, true, {
-    eventName: e
-    // ,playState: TuneIn.app.getPlayState()
-    // ,nowPlaying: TuneIn.app.getNowPlaying()
-    // ,userAuthenticated: TuneIn.Helpers.userAuthenticated()
-  });
-  document.dispatchEvent(evt);
+function _GetPlayerButton() {
+  var status_list = ["playing","paused", "stopped"];
+  for(var i=0;i<status_list.length;++i) {
+    if (document.getElementsByClassName(status_list[i]).length > 0) {
+      return document.getElementsByClassName(status_list[i])[0];
+    }
+  }
+  return null;
 }
 
+function _PlayerStatusChecker() {
+  player_status_checker_counter++;
+  var p_status = _GetPlayerStatus();
 
-// API /////////////////////////////////////////////////////////////
-// API /////////////////////////////////////////////////////////////
-// API /////////////////////////////////////////////////////////////
-// API /////////////////////////////////////////////////////////////
-// API /////////////////////////////////////////////////////////////
-function TIR_PlayPause() {
-  console.log("TIR_PlayPause");
-  document.getElementById('playerActionButton').click();
-}
+  if (p_status != null) {
+    __INFO('Player Status: ' +  p_status);
+    ga('TIR.send', 'event', 'Radio', 'Status', p_status);
+  }
 
-function TIR_PlayRadio(data) {
-  console.log("TIR_PlayRadio", data);
-  if (data.GuideId) {
-    window.location.replace("https://tunein.com/radio/" + data.GuideId);
+  if (p_status == 'playing' && player_status_checker_timer) {
+    window.clearInterval(player_status_checker_timer);
+  } else if (p_status == 'stopped' && player_status_checker_timer) {
+    window.clearInterval(player_status_checker_timer);
+  } else if (p_status == 'failed') {
+    NextRadio();
+    window.clearInterval(player_status_checker_timer);
+  }
+
+  // After a minute don't check the status so often.
+  if (player_status_checker_counter == 60) {
+    window.clearInterval(player_status_checker_timer);
+    player_status_checker_timer = setInterval(_PlayerStatusChecker, 5000);
+
+  // If it still doesn't help just give up
+  } else if (player_status_checker_counter > 80) {
+    __INFO('stop checking for player status');
+    window.clearInterval(player_status_checker_timer);
   }
 }
-
-function TIR_GetInfo() {
-  console.log("TIR_GetInfo");
-  _SendEventToExtension('GetInfoReply');
-}
-

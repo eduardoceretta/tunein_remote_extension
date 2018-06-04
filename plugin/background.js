@@ -44,8 +44,7 @@ function _updateBadge(state) {
   }
 }
 
-function _sendMessageToTuneInTab(request, callback) {
-  __DEBUG('_sendMessageToTuneInTab', request);
+function _sendMessageToContent(request, callback) {
   chrome.tabs.query({url : '*://tunein.com/*'}, function(tabs) {
     if (tabs && tabs.length > 0) {
       chrome.tabs.sendMessage(tabs[0].id, request, callback);
@@ -67,7 +66,7 @@ chrome.runtime.onConnect.addListener(function(port) {
 // Listens to Messages
 chrome.extension.onMessage.addListener( function(request, sender, sendResponse) {
   if (request.from == 'PopUp') {
-    _sendMessageToTuneInTab(request, function(response) {
+    _sendMessageToContent(request, function(response) {
       _processResponse(response);
     });
   } else if (request.from == 'Content') {
@@ -84,7 +83,7 @@ chrome.commands.onCommand.addListener(function(command) {
     var request = {};
     request.from = 'Keyboard';
     request.command = command;
-    _sendMessageToTuneInTab(request, function(response) {
+    _sendMessageToContent(request, function(response) {
       _processResponse(response);
     });
   }
@@ -97,6 +96,6 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
     request.from = "Options";
     request.key = key;
     request.value = changes[key];
-    _sendMessageToTuneInTab(request);
+    _sendMessageToContent(request);
   }
 });
