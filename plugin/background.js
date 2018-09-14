@@ -1,6 +1,8 @@
-function __DEBUG() {
-  console.log(arguments);
+function __DEBUG(...args) {
+  console.log('BACKGROUND:', args);
 }
+
+__DEBUG('INIT BACKGROUND');
 
 function _processResponse(response) {
   __DEBUG('_processResponse', response);
@@ -47,7 +49,10 @@ function _updateBadge(state) {
 function _sendMessageToContent(request, callback) {
   chrome.tabs.query({url : '*://tunein.com/*'}, function(tabs) {
     if (tabs && tabs.length > 0) {
-      chrome.tabs.sendMessage(tabs[0].id, request, callback);
+      for(var i=0; i<tabs.length; ++i) {
+        if (tabs[i].active)
+          chrome.tabs.sendMessage(tabs[i].id, request, callback);
+      }
     }
   });
 }

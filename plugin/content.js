@@ -1,6 +1,6 @@
 /////////////////START
 function __DEBUG(...args) {
-  // console.log(args);
+  console.log('CONTENT:', args);
 }
 InjectScript();
 
@@ -49,6 +49,7 @@ function _sendMessageToBackgroud(request, callback) {
 // Listener to Background Events
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
+    __DEBUG(request);
     if (isLoggedIn()) {
       if (request.from == 'Options' && request.key == 'Shuffle') {
         // radio_shuffle = request.value.newValue;

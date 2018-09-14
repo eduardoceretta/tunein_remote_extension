@@ -5,10 +5,10 @@ var player_status_checker_timer = null;
 var player_status_checker_counter = 0;
 
 function __INFO(...args) {
-  console.log(args);
+  console.log('INJECT:',args);
 }
 function __DEBUG(...args) {
-  console.log(args);
+  console.log('INJECT:',args);
 }
 /////////////////START
 __INFO('TuneIn Remote Plugin Loaded IN Page Content Script.');
