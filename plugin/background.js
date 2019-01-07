@@ -50,8 +50,7 @@ function _sendMessageToContent(request, callback) {
   chrome.tabs.query({url : '*://tunein.com/*'}, function(tabs) {
     if (tabs && tabs.length > 0) {
       for(var i=0; i<tabs.length; ++i) {
-        if (tabs[i].active)
-          chrome.tabs.sendMessage(tabs[i].id, request, callback);
+        chrome.tabs.sendMessage(tabs[i].id, request, callback);
       }
     }
   });
